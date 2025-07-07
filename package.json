@@ -1,0 +1,15 @@
+{
+  "name": "twitter-list-monitor",
+  "version": "1.0.0",
+  "description": "Monitor Twitter lists for updates using playwright-mcp-bypass",
+  "main": "twitter-monitor.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "dependencies": {
+    "playwright": "^1.40.0",
+    "express": "^4.18.2",
+    "ws": "^8.14.2"
+  }
+}

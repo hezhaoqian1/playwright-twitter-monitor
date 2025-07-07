@@ -1,0 +1,882 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Twitter 列表监控系统</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: #15202b;
+            color: #fff;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            background: #192734;
+            padding: 20px;
+            border-radius: 16px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+            margin-bottom: 20px;
+            border: 1px solid #38444d;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .logo {
+            width: 36px;
+            height: 36px;
+            background: #1da1f2;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .input-group {
+            flex: 1;
+            min-width: 300px;
+            display: flex;
+            gap: 10px;
+        }
+
+        input[type="text"] {
+            flex: 1;
+            padding: 12px 20px;
+            border: 1px solid #38444d;
+            border-radius: 25px;
+            font-size: 14px;
+            outline: none;
+            transition: all 0.3s;
+            background: #253341;
+            color: #fff;
+        }
+
+        input[type="text"]:focus {
+            border-color: #1da1f2;
+            background: #1a2733;
+        }
+
+        button {
+            background: #1da1f2;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 25px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        button:hover {
+            background: #1a91da;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(29, 161, 242, 0.3);
+        }
+
+        button:disabled {
+            background: #38444d;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .secondary-btn {
+            background: transparent;
+            border: 1px solid #38444d;
+            color: #8899a6;
+        }
+
+        .secondary-btn:hover {
+            background: #253341;
+            color: #fff;
+            border-color: #536471;
+        }
+
+        .status-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 15px 20px;
+            background: #253341;
+            border-radius: 12px;
+            margin-top: 15px;
+            border: 1px solid #38444d;
+        }
+
+        .status {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 14px;
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #536471;
+        }
+
+        .status-dot.active {
+            background: #00ba7c;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.6; transform: scale(1.2); }
+        }
+
+        .stats {
+            display: flex;
+            gap: 30px;
+            font-size: 14px;
+        }
+
+        .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .stat-label {
+            color: #8899a6;
+        }
+
+        .stat-value {
+            color: #fff;
+            font-weight: bold;
+            font-size: 16px;
+        }
+
+        .tweets-container {
+            display: grid;
+            gap: 15px;
+        }
+
+        .tweet {
+            background: #192734;
+            padding: 20px;
+            border-radius: 16px;
+            border: 1px solid #38444d;
+            transition: all 0.3s;
+            animation: slideIn 0.4s ease-out;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .tweet:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            border-color: #536471;
+        }
+
+        .tweet.new {
+            border-left: 4px solid #1da1f2;
+        }
+
+        .tweet.new::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(90deg, rgba(29, 161, 242, 0.1) 0%, transparent 100%);
+            animation: highlight 0.6s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes highlight {
+            0% { opacity: 0; }
+            50% { opacity: 1; }
+            100% { opacity: 0; }
+        }
+
+        .tweet-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 12px;
+        }
+
+        .tweet-user {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .tweet-avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: #253341;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            color: #8899a6;
+        }
+
+        .tweet-user-info {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .tweet-name {
+            font-weight: bold;
+            color: #fff;
+            font-size: 15px;
+        }
+
+        .tweet-handle {
+            color: #8899a6;
+            font-size: 14px;
+        }
+
+        .tweet-time {
+            color: #8899a6;
+            font-size: 14px;
+        }
+
+        .tweet-text {
+            color: #fff;
+            line-height: 1.5;
+            word-break: break-word;
+            font-size: 15px;
+            margin-bottom: 12px;
+        }
+
+        .tweet-actions {
+            display: flex;
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .tweet-link {
+            color: #1da1f2;
+            text-decoration: none;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            transition: all 0.2s;
+        }
+
+        .tweet-link:hover {
+            text-decoration: underline;
+            color: #1a91da;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 60px;
+            color: #8899a6;
+        }
+
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid #253341;
+            border-top-color: #1da1f2;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .error {
+            background: rgba(224, 36, 94, 0.1);
+            color: #e0245e;
+            padding: 15px 20px;
+            border-radius: 12px;
+            margin: 20px 0;
+            border: 1px solid rgba(224, 36, 94, 0.3);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 80px 20px;
+            color: #8899a6;
+        }
+
+        .empty-state-icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+            opacity: 0.5;
+        }
+
+        .empty-state h2 {
+            color: #fff;
+            margin-bottom: 10px;
+            font-size: 24px;
+        }
+
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #1da1f2;
+            color: white;
+            padding: 16px 24px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(29, 161, 242, 0.4);
+            animation: slideInRight 0.3s ease-out;
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            max-width: 400px;
+        }
+
+        .notification-icon {
+            font-size: 20px;
+        }
+
+        @keyframes slideInRight {
+            from {
+                transform: translateX(120%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .last-check {
+            color: #8899a6;
+            font-size: 12px;
+            font-style: italic;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            
+            .controls {
+                flex-direction: column;
+            }
+            
+            .input-group {
+                min-width: 100%;
+            }
+            
+            .stats {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .status-bar {
+                flex-direction: column;
+                gap: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>
+                <div class="logo">🐦</div>
+                Twitter 列表监控系统
+            </h1>
+            
+            <div class="controls">
+                <div class="input-group">
+                    <input type="text" 
+                           id="listUrl" 
+                           placeholder="输入 Twitter 列表 URL (例如: https://twitter.com/i/lists/1234567890)"
+                           value="">
+                    <button id="startBtn" onclick="toggleMonitoring()">
+                        <span>▶</span> 开始监控
+                    </button>
+                </div>
+                
+                <button class="secondary-btn" onclick="exportTweets()">
+                    <span>📥</span> 导出数据
+                </button>
+                
+                <button class="secondary-btn" onclick="clearTweets()">
+                    <span>🗑️</span> 清空
+                </button>
+            </div>
+            
+            <div class="status-bar">
+                <div class="status">
+                    <span class="status-dot" id="statusDot"></span>
+                    <span id="statusText">未连接</span>
+                    <span class="last-check" id="lastCheck"></span>
+                </div>
+                
+                <div class="stats">
+                    <div class="stat-item">
+                        <span class="stat-label">推文总数:</span>
+                        <span class="stat-value" id="tweetCount">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">新推文:</span>
+                        <span class="stat-value" id="newTweetCount">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">连接数:</span>
+                        <span class="stat-value" id="clientCount">0</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="tweetsContainer" class="tweets-container">
+            <div class="empty-state">
+                <div class="empty-state-icon">📭</div>
+                <h2>还没有推文</h2>
+                <p>输入 Twitter 列表 URL 并点击"开始监控"</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let ws = null;
+        let monitoring = false;
+        let tweets = [];
+        let newTweetCount = 0;
+        let reconnectTimeout = null;
+
+        // 连接 WebSocket
+        function connectWebSocket() {
+            if (ws && ws.readyState === WebSocket.OPEN) return;
+            
+            ws = new WebSocket('ws://localhost:3457');
+            
+            ws.onopen = () => {
+                console.log('WebSocket 连接成功');
+                updateStatus('已连接', true);
+                if (reconnectTimeout) {
+                    clearTimeout(reconnectTimeout);
+                    reconnectTimeout = null;
+                }
+            };
+            
+            ws.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                handleWebSocketMessage(data);
+            };
+            
+            ws.onclose = () => {
+                console.log('WebSocket 连接断开');
+                updateStatus('连接断开', false);
+                // 3秒后自动重连
+                reconnectTimeout = setTimeout(connectWebSocket, 3000);
+            };
+            
+            ws.onerror = (error) => {
+                console.error('WebSocket 错误:', error);
+            };
+        }
+
+        // 处理 WebSocket 消息
+        function handleWebSocketMessage(data) {
+            switch (data.type) {
+                case 'initial':
+                    tweets = data.tweets || [];
+                    if (data.status) {
+                        monitoring = data.status.monitoring;
+                        if (data.status.currentList) {
+                            document.getElementById('listUrl').value = data.status.currentList;
+                        }
+                        updateMonitoringUI(monitoring);
+                    }
+                    renderTweets();
+                    break;
+                    
+                case 'new_tweets':
+                    if (data.tweets && data.tweets.length > 0) {
+                        data.tweets.forEach(tweet => {
+                            tweets.unshift(tweet);
+                            newTweetCount++;
+                        });
+                        renderTweets();
+                        showNotification(`发现 ${data.count} 条新推文！`);
+                        updateStats();
+                    }
+                    break;
+                    
+                case 'all_recent_tweets':
+                    if (data.tweets && data.tweets.length > 0) {
+                        // 替换所有推文为24小时内的推文
+                        tweets = data.tweets.sort((a, b) => {
+                            // 优先使用原始推文时间排序
+                            const timeA = new Date(a.tweetTime || a.timestamp);
+                            const timeB = new Date(b.tweetTime || b.timestamp);
+                            return timeB - timeA; // 最新的在前
+                        });
+                        
+                        // 统计新推文数
+                        newTweetCount = data.newCount || 0;
+                        
+                        renderTweets();
+                        
+                        if (data.newCount > 0) {
+                            showNotification(`发现 ${data.newCount} 条新推文！`);
+                        }
+                        
+                        // 更新标题显示24小时内的推文数
+                        const statsElement = document.getElementById('stats');
+                        if (statsElement) {
+                            statsElement.style.display = 'flex';
+                            const twentyFourHourCount = document.createElement('span');
+                            twentyFourHourCount.className = 'stat-item';
+                            twentyFourHourCount.innerHTML = `<span class="stat-label">24小时内:</span> <span class="stat-value">${data.totalCount}</span>`;
+                            
+                            // 检查是否已存在，如果存在则更新
+                            const existing = document.querySelector('.twenty-four-hour-count');
+                            if (existing) {
+                                existing.innerHTML = twentyFourHourCount.innerHTML;
+                            } else {
+                                twentyFourHourCount.classList.add('twenty-four-hour-count');
+                                statsElement.insertBefore(twentyFourHourCount, statsElement.firstChild);
+                            }
+                        }
+                        
+                        updateStats();
+                    }
+                    break;
+                    
+                case 'monitoring_started':
+                    monitoring = true;
+                    updateMonitoringUI(true);
+                    showNotification('开始监控列表');
+                    break;
+                    
+                case 'monitoring_stopped':
+                    monitoring = false;
+                    updateMonitoringUI(false);
+                    break;
+                    
+                case 'heartbeat':
+                    updateLastCheck(data.lastCheck);
+                    document.getElementById('tweetCount').textContent = data.tweetsCount || tweets.length;
+                    break;
+                    
+                case 'error':
+                    showError(data.message);
+                    break;
+                    
+                case 'tweets_cleared':
+                    tweets = [];
+                    newTweetCount = 0;
+                    renderTweets();
+                    updateStats();
+                    showNotification('推文已清空');
+                    break;
+            }
+        }
+
+        // 切换监控状态
+        async function toggleMonitoring() {
+            const btn = document.getElementById('startBtn');
+            const urlInput = document.getElementById('listUrl');
+            
+            if (!monitoring) {
+                const listUrl = urlInput.value.trim();
+                if (!listUrl) {
+                    showError('请输入 Twitter 列表 URL');
+                    return;
+                }
+                
+                if (!listUrl.match(/^https?:\/\/(twitter\.com|x\.com)\/i\/lists\/\d+/)) {
+                    showError('请输入有效的 Twitter 列表 URL');
+                    return;
+                }
+                
+                btn.disabled = true;
+                btn.innerHTML = '<span>⏳</span> 启动中...';
+                
+                try {
+                    const response = await fetch('/api/monitor/start', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ listUrl })
+                    });
+                    
+                    const result = await response.json();
+                    
+                    if (!response.ok) {
+                        throw new Error(result.error);
+                    }
+                } catch (error) {
+                    showError('启动失败: ' + error.message);
+                    btn.disabled = false;
+                    btn.innerHTML = '<span>▶</span> 开始监控';
+                }
+            } else {
+                try {
+                    await fetch('/api/monitor/stop', { method: 'POST' });
+                } catch (error) {
+                    showError('停止失败: ' + error.message);
+                }
+            }
+        }
+
+        // 更新监控UI状态
+        function updateMonitoringUI(isMonitoring) {
+            const btn = document.getElementById('startBtn');
+            const urlInput = document.getElementById('listUrl');
+            
+            monitoring = isMonitoring;
+            btn.disabled = false;
+            
+            if (isMonitoring) {
+                btn.innerHTML = '<span>⏸</span> 停止监控';
+                urlInput.disabled = true;
+                updateStatus('监控中', true);
+            } else {
+                btn.innerHTML = '<span>▶</span> 开始监控';
+                urlInput.disabled = false;
+                updateStatus('已停止', false);
+            }
+        }
+
+        // 更新状态显示
+        function updateStatus(text, active) {
+            document.getElementById('statusText').textContent = text;
+            document.getElementById('statusDot').classList.toggle('active', active);
+        }
+
+        // 更新最后检查时间
+        function updateLastCheck(timestamp) {
+            if (timestamp) {
+                const time = new Date(timestamp).toLocaleTimeString();
+                document.getElementById('lastCheck').textContent = `最后检查: ${time}`;
+            }
+        }
+
+        // 更新统计信息
+        function updateStats() {
+            document.getElementById('tweetCount').textContent = tweets.length;
+            document.getElementById('newTweetCount').textContent = newTweetCount;
+        }
+
+        // 渲染推文列表
+        function renderTweets() {
+            const container = document.getElementById('tweetsContainer');
+            
+            if (tweets.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">📭</div>
+                        <h2>还没有推文</h2>
+                        <p>${monitoring ? '等待新推文...' : '输入 Twitter 列表 URL 并点击"开始监控"'}</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            container.innerHTML = tweets.map(tweet => `
+                <div class="tweet ${tweet.isNew ? 'new' : ''}">
+                    <div class="tweet-header">
+                        <div class="tweet-user">
+                            <div class="tweet-avatar">${tweet.userName ? tweet.userName[0].toUpperCase() : '?'}</div>
+                            <div class="tweet-user-info">
+                                <span class="tweet-name">${tweet.userName}</span>
+                                <span class="tweet-handle">${tweet.userHandle}</span>
+                            </div>
+                        </div>
+                        <span class="tweet-time">${formatTime(tweet.tweetTime || tweet.timestamp)}</span>
+                    </div>
+                    <div class="tweet-text">${escapeHtml(tweet.text)}</div>
+                    <div class="tweet-actions">
+                        ${tweet.link ? `<a href="${tweet.link}" target="_blank" class="tweet-link">查看原推文 →</a>` : ''}
+                    </div>
+                </div>
+            `).join('');
+            
+            updateStats();
+        }
+
+        // HTML 转义
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // 格式化时间
+        function formatTime(timestamp) {
+            const date = new Date(timestamp);
+            const now = new Date();
+            const diff = now - date;
+            
+            if (diff < 60000) {
+                return '刚刚';
+            } else if (diff < 3600000) {
+                return Math.floor(diff / 60000) + ' 分钟前';
+            } else if (diff < 86400000) {
+                return Math.floor(diff / 3600000) + ' 小时前';
+            } else {
+                return date.toLocaleDateString('zh-CN') + ' ' + date.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+            }
+        }
+
+        // 显示通知
+        function showNotification(message) {
+            const notification = document.createElement('div');
+            notification.className = 'notification';
+            notification.innerHTML = `
+                <span class="notification-icon">🔔</span>
+                <span>${message}</span>
+            `;
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.style.animation = 'slideInRight 0.3s ease-out reverse';
+                setTimeout(() => notification.remove(), 300);
+            }, 3000);
+        }
+
+        // 显示错误
+        function showError(message) {
+            const container = document.getElementById('tweetsContainer');
+            const error = document.createElement('div');
+            error.className = 'error';
+            error.textContent = '❌ ' + message;
+            container.insertBefore(error, container.firstChild);
+            
+            setTimeout(() => error.remove(), 5000);
+        }
+
+        // 导出推文
+        async function exportTweets() {
+            try {
+                const response = await fetch('/api/tweets/export');
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `tweets-export-${new Date().toISOString().split('T')[0]}.json`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                window.URL.revokeObjectURL(url);
+                showNotification('推文已导出');
+            } catch (error) {
+                showError('导出失败: ' + error.message);
+            }
+        }
+
+        // 清空推文
+        async function clearTweets() {
+            if (!confirm('确定要清空所有推文吗？此操作不可恢复。')) {
+                return;
+            }
+            
+            try {
+                await fetch('/api/tweets/clear', { method: 'POST' });
+                newTweetCount = 0;
+            } catch (error) {
+                showError('清空失败: ' + error.message);
+            }
+        }
+
+        // 加载初始数据
+        async function loadInitialData() {
+            try {
+                const [tweetsResponse, statusResponse] = await Promise.all([
+                    fetch('/api/tweets'),
+                    fetch('/api/status')
+                ]);
+                
+                tweets = await tweetsResponse.json();
+                const status = await statusResponse.json();
+                
+                document.getElementById('clientCount').textContent = status.connectedClients || 0;
+                
+                if (status.currentList) {
+                    document.getElementById('listUrl').value = status.currentList;
+                }
+                
+                updateMonitoringUI(status.monitoring);
+                renderTweets();
+            } catch (error) {
+                console.error('加载数据失败:', error);
+            }
+        }
+
+        // URL 参数处理
+        function handleUrlParams() {
+            const params = new URLSearchParams(window.location.search);
+            const listUrl = params.get('list');
+            if (listUrl) {
+                document.getElementById('listUrl').value = decodeURIComponent(listUrl);
+            }
+        }
+
+        // 初始化
+        handleUrlParams();
+        connectWebSocket();
+        loadInitialData();
+        
+        // 定期更新连接状态
+        setInterval(async () => {
+            try {
+                const response = await fetch('/api/status');
+                const status = await response.json();
+                document.getElementById('clientCount').textContent = status.connectedClients || 0;
+            } catch (error) {
+                console.error('更新状态失败:', error);
+            }
+        }, 5000);
+    </script>
+</body>
+</html>

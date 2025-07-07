@@ -1,0 +1,7 @@
+.DS_Store
+node_modules/
+twitter-profile/
+tweets-data.json
+screenshots/
+*.log
+.env
