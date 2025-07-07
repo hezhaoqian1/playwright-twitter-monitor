@@ -2,6 +2,7 @@ const express = require('express');
 const { chromium } = require('playwright');
 const WebSocket = require('ws');
 const fs = require('fs').promises;
+const fsSync = require('fs');
 const path = require('path');
 
 class TwitterMonitorServer {
@@ -220,9 +221,15 @@ class TwitterMonitorServer {
       });
       await this.page.waitForTimeout(3000);
       
+      // 确保 screenshots 目录存在
+      const screenshotsDir = path.join(__dirname, 'screenshots');
+      if (!fsSync.existsSync(screenshotsDir)) {
+        fsSync.mkdirSync(screenshotsDir, { recursive: true });
+      }
+      
       // 调试：截图保存
       const debugScreenshot = await this.page.screenshot({ 
-        path: `screenshots/debug-${Date.now()}.png`,
+        path: path.join(screenshotsDir, `debug-${Date.now()}.png`),
         fullPage: false 
       });
       console.log('📸 已保存调试截图到 screenshots 目录');

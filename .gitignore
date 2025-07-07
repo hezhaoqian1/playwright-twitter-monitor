@@ -5,3 +5,4 @@ tweets-data.json
 screenshots/
 *.log
 .env
+*.png
