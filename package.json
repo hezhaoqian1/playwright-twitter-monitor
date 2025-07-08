@@ -6,6 +6,7 @@
   "scripts": {
     "start": "node server.js",
     "start:multi": "node server-multi.js",
+    "start:advanced": "node server-advanced.js",
     "dev": "node server.js"
   },
   "dependencies": {

@@ -1,8 +1,31 @@
-.DS_Store
+# Dependencies
 node_modules/
-twitter-profile/
+
+# Data files
+monitor-data.json
 tweets-data.json
+
+# Browser profile
+twitter-profile/
+
+# Debug screenshots
 screenshots/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
 *.log
+npm-debug.log*
+
+# Environment variables
 .env
-*.png
+.env.local
+
+# Temporary files
+*.tmp
+*.temp
+
+# Symbolic links
+public/index.html
