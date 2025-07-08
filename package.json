@@ -1,10 +1,11 @@
 {
   "name": "twitter-list-monitor",
-  "version": "1.0.0",
-  "description": "Monitor Twitter lists for updates using playwright-mcp-bypass",
-  "main": "twitter-monitor.js",
+  "version": "2.0.0",
+  "description": "Monitor multiple Twitter lists with real-time updates",
+  "main": "server.js",
   "scripts": {
     "start": "node server.js",
+    "start:multi": "node server-multi.js",
     "dev": "node server.js"
   },
   "dependencies": {

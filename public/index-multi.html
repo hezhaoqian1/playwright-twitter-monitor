@@ -1,0 +1,1125 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Twitter 列表监控系统 - 多列表版</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: #0f1419;
+            color: #e7e9ea;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* 顶部导航栏 */
+        .navbar {
+            background: #000;
+            border-bottom: 1px solid #2f3336;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            backdrop-filter: blur(12px);
+            background: rgba(0, 0, 0, 0.85);
+        }
+
+        .navbar-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            height: 60px;
+        }
+
+        .navbar-brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 20px;
+            font-weight: 700;
+        }
+
+        .logo {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #1da1f2, #1a8cd8);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+        }
+
+        .navbar-actions {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .btn {
+            background: #1d9bf0;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 24px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn:hover {
+            background: #1a8cd8;
+            transform: scale(1.02);
+        }
+
+        .btn:disabled {
+            background: #536471;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-secondary {
+            background: transparent;
+            border: 1px solid #536471;
+            color: #eff3f4;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(239, 243, 244, 0.1);
+            border-color: #71767b;
+        }
+
+        .btn-icon {
+            background: transparent;
+            padding: 8px;
+            border-radius: 50%;
+        }
+
+        .btn-icon:hover {
+            background: rgba(29, 155, 240, 0.1);
+        }
+
+        /* 主容器 */
+        .main-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            min-height: calc(100vh - 60px);
+        }
+
+        /* 侧边栏 */
+        .sidebar {
+            width: 280px;
+            border-right: 1px solid #2f3336;
+            padding: 20px;
+            overflow-y: auto;
+            background: rgba(0, 0, 0, 0.3);
+        }
+
+        .sidebar-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+
+        .sidebar-title {
+            font-size: 20px;
+            font-weight: 700;
+        }
+
+        .list-item {
+            background: #16181c;
+            border: 1px solid #2f3336;
+            border-radius: 16px;
+            padding: 16px;
+            margin-bottom: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+        }
+
+        .list-item:hover {
+            background: #1c1f23;
+            border-color: #51555a;
+            transform: translateY(-1px);
+        }
+
+        .list-item.active {
+            background: rgba(29, 155, 240, 0.1);
+            border-color: #1d9bf0;
+        }
+
+        .list-item-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+
+        .list-name {
+            font-weight: 600;
+            font-size: 15px;
+            color: #e7e9ea;
+        }
+
+        .list-status {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+            color: #71767b;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #536471;
+        }
+
+        .status-dot.active {
+            background: #00ba7c;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .list-stats {
+            display: flex;
+            gap: 16px;
+            font-size: 13px;
+            color: #71767b;
+        }
+
+        .list-actions {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            display: flex;
+            gap: 4px;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        .list-item:hover .list-actions {
+            opacity: 1;
+        }
+
+        /* 内容区域 */
+        .content {
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        .content-header {
+            background: rgba(0, 0, 0, 0.65);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid #2f3336;
+            padding: 16px 24px;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .content-title {
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 12px;
+        }
+
+        .content-controls {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+        }
+
+        .stats-bar {
+            display: flex;
+            gap: 24px;
+            font-size: 14px;
+        }
+
+        .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #71767b;
+        }
+
+        .stat-value {
+            color: #e7e9ea;
+            font-weight: 600;
+        }
+
+        /* 推文容器 */
+        .tweets-container {
+            padding: 20px 24px;
+        }
+
+        .tweet {
+            background: #16181c;
+            border: 1px solid #2f3336;
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 16px;
+            transition: all 0.2s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .tweet:hover {
+            background: #1c1f23;
+            border-color: #51555a;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .tweet.new::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 4px;
+            background: #1d9bf0;
+        }
+
+        .tweet-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 12px;
+        }
+
+        .tweet-user {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .tweet-avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #536471, #71767b);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            font-weight: 600;
+            color: #e7e9ea;
+        }
+
+        .tweet-user-info {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .tweet-name {
+            font-weight: 700;
+            color: #e7e9ea;
+            font-size: 15px;
+        }
+
+        .tweet-handle {
+            color: #71767b;
+            font-size: 14px;
+        }
+
+        .tweet-time {
+            color: #71767b;
+            font-size: 14px;
+        }
+
+        .tweet-text {
+            color: #e7e9ea;
+            line-height: 1.5;
+            word-break: break-word;
+            font-size: 15px;
+            margin-bottom: 12px;
+        }
+
+        .tweet-actions {
+            display: flex;
+            gap: 16px;
+            margin-top: 16px;
+        }
+
+        .tweet-link {
+            color: #1d9bf0;
+            text-decoration: none;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s;
+        }
+
+        .tweet-link:hover {
+            text-decoration: underline;
+        }
+
+        /* 空状态 */
+        .empty-state {
+            text-align: center;
+            padding: 80px 20px;
+            color: #71767b;
+        }
+
+        .empty-state-icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+            opacity: 0.5;
+        }
+
+        .empty-state h2 {
+            color: #e7e9ea;
+            margin-bottom: 10px;
+            font-size: 24px;
+        }
+
+        /* 添加列表模态框 */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(91, 112, 131, 0.4);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: #000;
+            border-radius: 16px;
+            padding: 32px;
+            max-width: 600px;
+            width: 90%;
+            border: 1px solid #536471;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+        }
+
+        .modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 24px;
+        }
+
+        .modal-title {
+            font-size: 20px;
+            font-weight: 700;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 14px;
+            color: #71767b;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 12px 16px;
+            background: #16181c;
+            border: 1px solid #2f3336;
+            border-radius: 8px;
+            color: #e7e9ea;
+            font-size: 15px;
+            outline: none;
+            transition: all 0.2s;
+        }
+
+        .form-input:focus {
+            border-color: #1d9bf0;
+            background: #000;
+        }
+
+        .form-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+            margin-top: 24px;
+        }
+
+        /* 加载动画 */
+        .loading {
+            text-align: center;
+            padding: 60px;
+            color: #71767b;
+        }
+
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid #2f3336;
+            border-top-color: #1d9bf0;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* 通知提示 */
+        .notification {
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            background: #1d9bf0;
+            color: white;
+            padding: 16px 24px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(29, 155, 240, 0.4);
+            animation: slideInRight 0.3s ease-out;
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            max-width: 400px;
+        }
+
+        @keyframes slideInRight {
+            from {
+                transform: translateX(120%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 1024px) {
+            .sidebar {
+                width: 240px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .main-container {
+                flex-direction: column;
+            }
+            
+            .sidebar {
+                width: 100%;
+                border-right: none;
+                border-bottom: 1px solid #2f3336;
+                max-height: 300px;
+            }
+            
+            .navbar-content {
+                padding: 0 16px;
+            }
+            
+            .tweets-container {
+                padding: 16px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 顶部导航栏 -->
+    <nav class="navbar">
+        <div class="navbar-content">
+            <div class="navbar-brand">
+                <div class="logo">🐦</div>
+                <span>Twitter 列表监控</span>
+            </div>
+            <div class="navbar-actions">
+                <button class="btn" onclick="showAddListModal()">
+                    <span>➕</span>
+                    <span>添加列表</span>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 主容器 -->
+    <div class="main-container">
+        <!-- 侧边栏 -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h2 class="sidebar-title">监控列表</h2>
+                <span id="listCount" style="color: #71767b; font-size: 14px;">0</span>
+            </div>
+            <div id="listsContainer">
+                <div class="empty-state">
+                    <p>还没有添加列表</p>
+                    <p style="font-size: 13px; margin-top: 8px;">点击上方"添加列表"开始</p>
+                </div>
+            </div>
+        </aside>
+
+        <!-- 内容区域 -->
+        <main class="content">
+            <div id="contentArea">
+                <div class="empty-state" style="height: calc(100vh - 60px); display: flex; flex-direction: column; justify-content: center;">
+                    <div class="empty-state-icon">📋</div>
+                    <h2>选择一个列表开始监控</h2>
+                    <p>从左侧选择一个列表，或添加新的列表</p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- 添加列表模态框 -->
+    <div id="addListModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">添加 Twitter 列表</h2>
+                <button class="btn-icon" onclick="hideAddListModal()">✕</button>
+            </div>
+            <form onsubmit="handleAddList(event)">
+                <div class="form-group">
+                    <label class="form-label">列表 URL</label>
+                    <input type="url" 
+                           id="listUrl" 
+                           class="form-input" 
+                           placeholder="https://twitter.com/i/lists/1234567890"
+                           required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">列表名称（可选）</label>
+                    <input type="text" 
+                           id="listName" 
+                           class="form-input" 
+                           placeholder="给列表起个名字">
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" onclick="hideAddListModal()">取消</button>
+                    <button type="submit" class="btn">添加列表</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        let ws = null;
+        let lists = new Map();
+        let currentListId = null;
+        let tweets = new Map(); // 按列表ID存储推文
+        let activeMonitors = new Set();
+
+        // WebSocket 连接
+        function connectWebSocket() {
+            if (ws && ws.readyState === WebSocket.OPEN) return;
+            
+            ws = new WebSocket('ws://localhost:3457');
+            
+            ws.onopen = () => {
+                console.log('WebSocket 连接成功');
+                loadLists();
+            };
+            
+            ws.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                handleWebSocketMessage(data);
+            };
+            
+            ws.onclose = () => {
+                console.log('WebSocket 连接断开');
+                setTimeout(connectWebSocket, 3000);
+            };
+            
+            ws.onerror = (error) => {
+                console.error('WebSocket 错误:', error);
+            };
+        }
+
+        // 处理 WebSocket 消息
+        function handleWebSocketMessage(data) {
+            switch (data.type) {
+                case 'initial':
+                    if (data.lists) {
+                        lists.clear();
+                        data.lists.forEach(list => lists.set(list.id, list));
+                        renderLists();
+                    }
+                    if (data.activeMonitors) {
+                        activeMonitors = new Set(data.activeMonitors);
+                        updateListStatuses();
+                    }
+                    break;
+                    
+                case 'tweets_update':
+                    if (data.listId && data.tweets) {
+                        if (!tweets.has(data.listId)) {
+                            tweets.set(data.listId, []);
+                        }
+                        tweets.set(data.listId, data.tweets);
+                        
+                        if (currentListId === data.listId) {
+                            renderTweets();
+                        }
+                        
+                        if (data.newCount > 0) {
+                            showNotification(`列表 "${lists.get(data.listId)?.name}" 发现 ${data.newCount} 条新推文！`);
+                        }
+                    }
+                    break;
+                    
+                case 'monitoring_started':
+                    activeMonitors.add(data.listId);
+                    updateListStatuses();
+                    if (data.list) {
+                        lists.set(data.list.id, data.list);
+                        renderLists();
+                    }
+                    break;
+                    
+                case 'monitoring_stopped':
+                    activeMonitors.delete(data.listId);
+                    updateListStatuses();
+                    break;
+                    
+                case 'heartbeat':
+                    if (data.listId === currentListId) {
+                        updateStats(data);
+                    }
+                    break;
+            }
+        }
+
+        // 加载列表
+        async function loadLists() {
+            try {
+                const response = await fetch('/api/lists');
+                const listsData = await response.json();
+                
+                lists.clear();
+                listsData.forEach(list => lists.set(list.id, list));
+                renderLists();
+                
+                // 获取状态
+                const statusResponse = await fetch('/api/status');
+                const status = await statusResponse.json();
+                
+                activeMonitors = new Set(status.lists.filter(l => l.isActive).map(l => l.id));
+                updateListStatuses();
+            } catch (error) {
+                console.error('加载列表失败:', error);
+            }
+        }
+
+        // 渲染列表
+        function renderLists() {
+            const container = document.getElementById('listsContainer');
+            const listCount = document.getElementById('listCount');
+            
+            listCount.textContent = lists.size;
+            
+            if (lists.size === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <p>还没有添加列表</p>
+                        <p style="font-size: 13px; margin-top: 8px;">点击上方"添加列表"开始</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            container.innerHTML = Array.from(lists.values()).map(list => `
+                <div class="list-item ${list.id === currentListId ? 'active' : ''}" 
+                     data-list-id="${list.id}"
+                     onclick="selectList('${list.id}')">
+                    <div class="list-item-header">
+                        <span class="list-name">${escapeHtml(list.name)}</span>
+                        <div class="list-actions">
+                            <button class="btn-icon" onclick="event.stopPropagation(); toggleMonitoring('${list.id}')" 
+                                    title="${activeMonitors.has(list.id) ? '停止监控' : '开始监控'}">
+                                ${activeMonitors.has(list.id) ? '⏸' : '▶'}
+                            </button>
+                            <button class="btn-icon" onclick="event.stopPropagation(); deleteList('${list.id}')" title="删除">
+                                🗑️
+                            </button>
+                        </div>
+                    </div>
+                    <div class="list-status">
+                        <span class="status-dot ${activeMonitors.has(list.id) ? 'active' : ''}"></span>
+                        <span>${activeMonitors.has(list.id) ? '监控中' : '未监控'}</span>
+                    </div>
+                    <div class="list-stats">
+                        <span>推文: ${list.tweetsCount || 0}</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // 选择列表
+        async function selectList(listId) {
+            currentListId = listId;
+            const list = lists.get(listId);
+            
+            if (!list) return;
+            
+            // 更新侧边栏高亮
+            document.querySelectorAll('.list-item').forEach(item => {
+                item.classList.toggle('active', item.dataset.listId === listId);
+            });
+            
+            // 显示加载中
+            document.getElementById('contentArea').innerHTML = `
+                <div class="loading">
+                    <div class="loading-spinner"></div>
+                    <p>加载推文中...</p>
+                </div>
+            `;
+            
+            // 加载推文
+            try {
+                const response = await fetch(`/api/lists/${listId}/tweets`);
+                const tweetsData = await response.json();
+                
+                tweets.set(listId, tweetsData);
+                renderContent();
+            } catch (error) {
+                console.error('加载推文失败:', error);
+                document.getElementById('contentArea').innerHTML = `
+                    <div class="empty-state">
+                        <p style="color: #f4212e;">加载失败</p>
+                    </div>
+                `;
+            }
+        }
+
+        // 渲染内容区域
+        function renderContent() {
+            if (!currentListId) return;
+            
+            const list = lists.get(currentListId);
+            const listTweets = tweets.get(currentListId) || [];
+            
+            document.getElementById('contentArea').innerHTML = `
+                <div class="content-header">
+                    <h1 class="content-title">${escapeHtml(list.name)}</h1>
+                    <div class="content-controls">
+                        <div class="stats-bar">
+                            <div class="stat-item">
+                                <span>推文总数:</span>
+                                <span class="stat-value">${listTweets.length}</span>
+                            </div>
+                            <div class="stat-item">
+                                <span>监控状态:</span>
+                                <span class="stat-value">${activeMonitors.has(list.id) ? '监控中' : '未监控'}</span>
+                            </div>
+                            <div class="stat-item" id="lastCheck" style="display: none;">
+                                <span>最后检查:</span>
+                                <span class="stat-value">-</span>
+                            </div>
+                        </div>
+                        <div>
+                            <button class="btn btn-secondary" onclick="exportTweets('${list.id}')">
+                                导出数据
+                            </button>
+                            ${activeMonitors.has(list.id) 
+                                ? `<button class="btn" onclick="toggleMonitoring('${list.id}')">停止监控</button>`
+                                : `<button class="btn" onclick="toggleMonitoring('${list.id}')">开始监控</button>`
+                            }
+                        </div>
+                    </div>
+                </div>
+                <div class="tweets-container" id="tweetsContainer">
+                    ${renderTweets()}
+                </div>
+            `;
+        }
+
+        // 渲染推文
+        function renderTweets() {
+            const listTweets = tweets.get(currentListId) || [];
+            
+            if (listTweets.length === 0) {
+                return `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">📭</div>
+                        <h2>还没有推文</h2>
+                        <p>开始监控后将显示推文</p>
+                    </div>
+                `;
+            }
+            
+            return listTweets.map(tweet => `
+                <div class="tweet ${tweet.isNew ? 'new' : ''}">
+                    <div class="tweet-header">
+                        <div class="tweet-user">
+                            <div class="tweet-avatar">${tweet.userName ? tweet.userName[0].toUpperCase() : '?'}</div>
+                            <div class="tweet-user-info">
+                                <span class="tweet-name">${escapeHtml(tweet.userName)}</span>
+                                <span class="tweet-handle">${escapeHtml(tweet.userHandle)}</span>
+                            </div>
+                        </div>
+                        <span class="tweet-time">${formatTime(tweet.tweetTime || tweet.timestamp)}</span>
+                    </div>
+                    <div class="tweet-text">${escapeHtml(tweet.text)}</div>
+                    <div class="tweet-actions">
+                        ${tweet.link ? `<a href="${tweet.link}" target="_blank" class="tweet-link">查看原推文 →</a>` : ''}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // 切换监控状态
+        async function toggleMonitoring(listId) {
+            const isActive = activeMonitors.has(listId);
+            const endpoint = isActive ? 'stop' : 'start';
+            
+            try {
+                const response = await fetch(`/api/lists/${listId}/monitor/${endpoint}`, {
+                    method: 'POST'
+                });
+                
+                if (!response.ok) {
+                    throw new Error('操作失败');
+                }
+                
+                if (isActive) {
+                    activeMonitors.delete(listId);
+                } else {
+                    activeMonitors.add(listId);
+                }
+                
+                updateListStatuses();
+                if (currentListId === listId) {
+                    renderContent();
+                }
+            } catch (error) {
+                showNotification('操作失败: ' + error.message, 'error');
+            }
+        }
+
+        // 更新列表状态
+        function updateListStatuses() {
+            document.querySelectorAll('.list-item').forEach(item => {
+                const listId = item.dataset.listId;
+                const statusDot = item.querySelector('.status-dot');
+                const statusText = item.querySelector('.list-status span:last-child');
+                const actionBtn = item.querySelector('.list-actions button:first-child');
+                
+                if (activeMonitors.has(listId)) {
+                    statusDot.classList.add('active');
+                    statusText.textContent = '监控中';
+                    actionBtn.textContent = '⏸';
+                    actionBtn.title = '停止监控';
+                } else {
+                    statusDot.classList.remove('active');
+                    statusText.textContent = '未监控';
+                    actionBtn.textContent = '▶';
+                    actionBtn.title = '开始监控';
+                }
+            });
+        }
+
+        // 显示添加列表模态框
+        function showAddListModal() {
+            document.getElementById('addListModal').classList.add('active');
+            document.getElementById('listUrl').focus();
+        }
+
+        // 隐藏添加列表模态框
+        function hideAddListModal() {
+            document.getElementById('addListModal').classList.remove('active');
+            document.getElementById('listUrl').value = '';
+            document.getElementById('listName').value = '';
+        }
+
+        // 处理添加列表
+        async function handleAddList(event) {
+            event.preventDefault();
+            
+            const url = document.getElementById('listUrl').value.trim();
+            const name = document.getElementById('listName').value.trim();
+            
+            try {
+                const response = await fetch('/api/lists', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url, name })
+                });
+                
+                const result = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(result.error);
+                }
+                
+                lists.set(result.id, result);
+                renderLists();
+                hideAddListModal();
+                showNotification('列表添加成功！');
+                
+                // 自动选择新添加的列表
+                selectList(result.id);
+            } catch (error) {
+                showNotification('添加失败: ' + error.message, 'error');
+            }
+        }
+
+        // 删除列表
+        async function deleteList(listId) {
+            if (!confirm('确定要删除这个列表吗？')) return;
+            
+            try {
+                const response = await fetch(`/api/lists/${listId}`, {
+                    method: 'DELETE'
+                });
+                
+                if (!response.ok) {
+                    throw new Error('删除失败');
+                }
+                
+                lists.delete(listId);
+                tweets.delete(listId);
+                activeMonitors.delete(listId);
+                
+                if (currentListId === listId) {
+                    currentListId = null;
+                    document.getElementById('contentArea').innerHTML = `
+                        <div class="empty-state" style="height: calc(100vh - 60px); display: flex; flex-direction: column; justify-content: center;">
+                            <div class="empty-state-icon">📋</div>
+                            <h2>选择一个列表开始监控</h2>
+                            <p>从左侧选择一个列表，或添加新的列表</p>
+                        </div>
+                    `;
+                }
+                
+                renderLists();
+                showNotification('列表已删除');
+            } catch (error) {
+                showNotification('删除失败: ' + error.message, 'error');
+            }
+        }
+
+        // 导出推文
+        async function exportTweets(listId) {
+            const list = lists.get(listId);
+            const listTweets = tweets.get(listId) || [];
+            
+            const data = {
+                list: list,
+                tweets: listTweets,
+                exportTime: new Date().toISOString()
+            };
+            
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `tweets-${list.name}-${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+            
+            showNotification('推文已导出');
+        }
+
+        // 显示通知
+        function showNotification(message, type = 'success') {
+            const notification = document.createElement('div');
+            notification.className = 'notification';
+            if (type === 'error') {
+                notification.style.background = '#f4212e';
+            }
+            notification.innerHTML = `
+                <span>${type === 'success' ? '✓' : '⚠'}</span>
+                <span>${message}</span>
+            `;
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.style.animation = 'slideInRight 0.3s ease-out reverse';
+                setTimeout(() => notification.remove(), 300);
+            }, 3000);
+        }
+
+        // 格式化时间
+        function formatTime(timestamp) {
+            const date = new Date(timestamp);
+            const now = new Date();
+            const diff = now - date;
+            
+            if (diff < 60000) {
+                return '刚刚';
+            } else if (diff < 3600000) {
+                return Math.floor(diff / 60000) + ' 分钟前';
+            } else if (diff < 86400000) {
+                return Math.floor(diff / 3600000) + ' 小时前';
+            } else {
+                return date.toLocaleDateString('zh-CN') + ' ' + date.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+            }
+        }
+
+        // HTML 转义
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // 更新统计信息
+        function updateStats(data) {
+            if (data.lastCheck) {
+                const lastCheckElement = document.getElementById('lastCheck');
+                if (lastCheckElement) {
+                    lastCheckElement.style.display = 'flex';
+                    lastCheckElement.querySelector('.stat-value').textContent = new Date(data.lastCheck).toLocaleTimeString();
+                }
+            }
+        }
+
+        // 初始化
+        connectWebSocket();
+        
+        // 点击模态框外部关闭
+        document.getElementById('addListModal').addEventListener('click', (e) => {
+            if (e.target.classList.contains('modal')) {
+                hideAddListModal();
+            }
+        });
+
+        // 键盘快捷键
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                hideAddListModal();
+            }
+            if (e.metaKey && e.key === 'n') {
+                e.preventDefault();
+                showAddListModal();
+            }
+        });
+    </script>
+</body>
+</html>
